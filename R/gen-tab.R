@@ -29,15 +29,15 @@
 gen.tab <- function(gen.dat,outcome,filter=0,paired = F,cont=F,rank = T){
 
   # remove all columns that are constant #
-  if(length(which(apply(gen.dat, 2, function(x){length(unique(x)) == 1}))) > 0)
-    gen.dat <- gen.dat[,-which(apply(gen.dat, 2, function(x){length(unique(x)) == 1}))]
+  if(length(which(apply(gen.dat, 2, function(x){length(unique(x[!is.na(x)])) == 1} || all(is.na(x))))) > 0)
+    gen.dat <- gen.dat[,-which(apply(gen.dat, 2, function(x){length(unique(x[!is.na(x)])) <= 1 || all(is.na(x))}))]
 
   if(filter > 0){
     # get binary cases #
-    temp <- apply(gen.dat, 2, function(x){length(unique(x)) == 2})
+    temp <- apply(gen.dat, 2, function(x){length(unique(x[!is.na(x)])) == 2})
     genes.bin <- names(temp[which(temp)])
-    if(length(genes.bin) == ncol(gen.dat)) rm <- apply(gen.dat, 2, function(x){sum(x)/length(x) < filter})
-    else rm <- apply(gen.dat[,genes.bin], 2, function(x){sum(x)/length(x) < filter})
+    if(length(genes.bin) == ncol(gen.dat)) rm <- apply(gen.dat, 2, function(x){sum(x, na.rm = T)/length(x) < filter})
+    else rm <- apply(gen.dat[,genes.bin], 2, function(x){sum(x, na.rm = T)/length(x) < filter})
     genes.rm <- names(rm[which(rm)])
     # print(genes.rm)
     gen.dat <- gen.dat %>%
@@ -59,13 +59,13 @@ gen.tab <- function(gen.dat,outcome,filter=0,paired = F,cont=F,rank = T){
         # tt = with(as.data.frame(cbind(x,outcome)), table(x,outcome))
         test <- exact2x2::mcnemar.exact(x = x[1:(length(x)/2)],y = x[(length(x)/2+1):length(x)])
       }
-      out <- c(sum(x)/length(x))
+      out <- c(sum(x, na.rm = T)/length(x))
       for (i in 1:length(levels(outcome))) {
-        out <- c(out, sum(x[which(outcome == levels(outcome)[i])])/length(which(outcome == levels(outcome)[i])))
+        out <- c(out, sum(x[which(outcome == levels(outcome)[i])], na.rm = T)/length(which(outcome == levels(outcome)[i])))
       }
       out <- paste0(round(as.numeric(out)*100,digits = 2),"%")
       if (!is.null(test$estimate)) {
-        out <- c(out, round(as.numeric(test$estimate),digits = 2), round(test$p.value,digits = 5), round(as.numeric(test$conf.int),digits =2))
+        out <- c(out, round(as.numeric(test$estimate),digits = 2), formatC(test$p.value, format = "e", digits = 2), round(as.numeric(test$conf.int),digits =2))
         names(out) <- c("Overall",levels(outcome)[1:length(levels(outcome))],
                         "OddsRatio", "Pvalue", "Lower", "Upper")
       }
@@ -79,7 +79,7 @@ gen.tab <- function(gen.dat,outcome,filter=0,paired = F,cont=F,rank = T){
 
     colnames(fits)[2:(length(levels(outcome))+1)] <- paste0(colnames(fits)[2:(length(levels(outcome))+1)],
                                                             "(N=",as.numeric(summary(outcome)),")")
-    fits$FDR <- p.adjust(as.numeric(as.character(fits$Pvalue)),method="fdr")
+    fits$FDR <- formatC(p.adjust(as.numeric(as.character(fits$Pvalue)),method="fdr"), format = "e", digits = 2)
     if(rank) fits <- fits[order(as.numeric(as.character(fits$Pvalue))),]
 
     if (!is.null(fits$OddsRatio)){

@@ -17,5 +17,5 @@ You can install the development version from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("AxelitoMartin/gnomeR")
+devtools::install_github("AxelitoMartin/gnomeR", build_vignettes = T)
 ```

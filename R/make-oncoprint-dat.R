@@ -14,6 +14,10 @@
 
 dat.oncoPrint <- function(gen.dat,clin.dat=NULL){
 
+  # would be best if genetics also had an unknown #
+  if(anyNA(gen.dat))
+    gen.dat[is.na(gen.dat)] <- 0
+
   if(!is.null(clin.dat)){
     # seet NA's to UNKNOWN #
     clin.dat <- clin.dat %>%

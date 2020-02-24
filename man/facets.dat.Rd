@@ -4,10 +4,12 @@
 \alias{facets.dat}
 \title{facets.dat}
 \usage{
-facets.dat(filenames, path, patients = NULL, min.purity = 0.3,
-  epsilon = 0.005)
+facets.dat(seg = NULL, filenames = NULL, path = NULL,
+  patients = NULL, min.purity = 0.3, epsilon = 0.005, adaptive = F)
 }
 \arguments{
+\item{seg}{a segmentation file containing the segmentation information of multiple patients}
+
 \item{filenames}{the names of the segment files to be loaded and processed (Note must end in ".Rdata").}
 
 \item{path}{the relative path to the files folder from your current directory}

@@ -64,7 +64,7 @@ as.tbl(cna[1:5,1:5])
 as.tbl(fusion) %>% select(Tumor_Sample_Barcode,Hugo_Symbol,Fusion)
 ```
 
-## clin.patientsical 
+## Clinical 
 
 ### Patients information 
 
@@ -95,20 +95,22 @@ We can create a binary matrix of genetic events from the files described above. 
 - fusion : optional fusion file to be included. Fusions will be added as their own column with ".fus" suffix
 - cna : optional copy number alteration file to be included. CNAs will be added as their column with ".Amp" suffix for amplifications and ".Del" suffix for deletions
 - cna.relax : boolean specifying if shallow deletions and low level gains should be counted as deletions and amplifications respectively
+- spe.plat : boolean specifying if specific IMPACT platforms should be considered. When TRUE NAs will fill the cells for genes
+#' of patients that were not sequenced on that plaform
 
 This function will return a binary matrix of genetics events with patients as rows and columns as genes. Along with a list of patients that weren't found to have any events (if any).
 
 ```{r}
-patients <- as.character(unique(mut$Tumor_Sample_Barcode[1:10000]))
-bin.mut <- create.bin.matrix(patients = patients,maf = mut,mut.type = "SOMATIC",SNP.only = F,include.silent = F)
-as.tbl(bin.mut$mut)
+patients <- as.character(unique(mut$Tumor_Sample_Barcode))[1:1000]
+bin.mut <- binmat(patients = patients,maf = mut,mut.type = "SOMATIC",SNP.only = F,include.silent = F, spe.plat = T)
+as.tbl(bin.mut)
 ```
 
 Similarly including fusions and CNAs:
 
 ```{r}
-bin.mut <- create.bin.matrix(patients = patients,maf = mut,mut.type = "SOMATIC",SNP.only = F,include.silent = F, fusion = fusion, cna = cna)
-as.tbl(bin.mut$mut)
+bin.mut <- binmat(patients = patients,maf = mut,mut.type = "SOMATIC",SNP.only = F,include.silent = F, fusion = fusion, cna = cna, spe.plat = T)
+as.tbl(bin.mut)
 ```
 
 ## Visualizing genetics
@@ -135,7 +137,7 @@ The `gen.tab` function allows us to test for potential differences in genetic ev
 
 ```{r}
 outcome <- as.character(clin.sample$Sample.Type[match(patients,clin.sample$Sample.Identifier)])
-gen.dat <- bin.mut$mut
+gen.dat <- bin.mut
 gen.tab(gen.dat = gen.dat,
         outcome = outcome,
         filter = 0.05,paired = F,cont = F,rank = T)
@@ -147,6 +149,7 @@ gen.tab(gen.dat = gen.dat,
 Similarly we show here an example with a simulated continuous outcome:
 
 ```{r}
+set.seed(1)
 outcome <-  rnorm(n = nrow(gen.dat))
 tab.out <- gen.tab(gen.dat = gen.dat,
         outcome = outcome,
@@ -173,7 +176,7 @@ surv.dat <- clin.patients %>%
   mutate(time = as.numeric(as.character(time)),
     status = ifelse(status == "LIVING",0,1)) %>%
     filter(!is.na(time))
-X <- bin.mut$mut[match(surv.dat$DMPID,abbreviate(rownames(bin.mut$mut),strict = T, minlength = 9)),]
+X <- bin.mut[match(surv.dat$DMPID,abbreviate(rownames(bin.mut),strict = T, minlength = 9)),]
 uni.cox(X = X, surv.dat = surv.dat,surv.formula = Surv(time,status)~.,filter = 0.05)
 ```
 
@@ -184,14 +187,14 @@ uni.cox(X = X, surv.dat = surv.dat,surv.formula = Surv(time,status)~.,filter = 0
 
 OncoPrints are a convenient way to study comutation patterns in our cohort through the `plot_oncoPrint` function. It takes as argument:
 
-- gen.dat : data frame of binary genetic events as created by the `create.bin.matrix` function
+- gen.dat : data frame of binary genetic events as created by the `binmat` function
 - clin.patients.dat : optional data frame of clin.patientsical covariates
 - ordered : order in which patients should be printed in the OncoPrint
 
 We show here an example with the most common genes.
 
 ```{r}
-gen.dat <- bin.mut$mut[,names(sort(apply(bin.mut$mut,2, sum),decreasing = T))[1:15]]
+gen.dat <- bin.mut[1:1000,names(sort(apply(bin.mut,2, sum),decreasing = T))[1:15]]
 plot_oncoPrint(gen.dat)
 ```
 

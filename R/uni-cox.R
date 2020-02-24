@@ -47,13 +47,18 @@ uni.cox <- function(X,surv.dat,surv.formula,filter = 0,genes = NULL){
 
   if(is.null(dim(X)) )
     stop("Only one or fewer genes were found from the 'genes' argument. We need a minimum of two.")
+  # remove all columns that are constant #
+  if(length(which(apply(X, 2, function(x){length(unique(x[!is.na(x)])) == 1} || all(is.na(x))))) > 0)
+    X <- X[,-which(apply(X, 2, function(x){length(unique(x[!is.na(x)])) <= 1 || all(is.na(x))}))]
+
   if(filter > 0){
     # get binary cases #
-    temp <- apply(X, 2, function(x){length(unique(x)) <= 2})
+    temp <- apply(X, 2, function(x){length(unique(x[!is.na(x)])) == 2})
     genes.bin <- names(temp[which(temp)])
-    if(length(genes.bin) == ncol(X)) rm <- apply(X, 2, function(x){sum(x)/length(x) < filter})
-    else rm <- apply(X[,genes.bin], 2, function(x){sum(x)/length(x) < filter})
+    if(length(genes.bin) == ncol(X)) rm <- apply(X, 2, function(x){sum(x, na.rm = T)/length(x) < filter})
+    else rm <- apply(X[,genes.bin], 2, function(x){sum(x, na.rm = T)/length(x) < filter})
     genes.rm <- names(rm[which(rm)])
+    # print(genes.rm)
     X <- X %>%
       select(-one_of(genes.rm))
   }
@@ -65,7 +70,7 @@ uni.cox <- function(X,surv.dat,surv.formula,filter = 0,genes = NULL){
   survResponse <- survFormula[[2]]
 
   if(!length(as.list(survResponse)) %in% c(3,4)){
-    stop("ERROR : Response must be a 'survival' object with 'Surv(time, status)' or 'Surv(time1, time2, status)'.")
+    stop("ERROR : Response must be a 'survival' object with 'Surv(time, status)~.' or 'Surv(time1, time2, status)~.'.")
   }
   ### reprocess surv.dat
   if(length(as.list(survResponse)) == 3){
